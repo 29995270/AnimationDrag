@@ -53,7 +53,8 @@ public class ChromeActivity extends AppCompatActivity {
                         }
                     }
                 });
-        root.addAnimSet(animSet, AnimationDragHelper.DRAG_VERTICAL);
+        root.addAnimSet(animSet, AnimationDragHelper.DRAG_VERTICAL_T2B);
+
     }
 /*
     @SuppressWarnings("unchecked")

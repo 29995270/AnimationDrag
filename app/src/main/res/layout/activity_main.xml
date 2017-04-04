@@ -17,11 +17,15 @@
             android:orientation="vertical">
             <View
                 android:layout_width="match_parent"
-                android:layout_height="88dp"
+                android:layout_height="200dp"
                 android:background="@color/colorPrimary"/>
-            <View
+            <TextView
+                android:id="@+id/qq"
                 android:layout_width="match_parent"
                 android:layout_height="88dp"
+                android:text="QQ Slide"
+                android:gravity="center"
+                android:textSize="24sp"
                 android:background="@color/colorAccent"/>
             <View
                 android:layout_width="match_parent"

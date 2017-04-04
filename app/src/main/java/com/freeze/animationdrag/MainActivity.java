@@ -2,39 +2,30 @@ package com.freeze.animationdrag;
 
 import android.animation.ObjectAnimator;
 import android.content.Intent;
-import android.graphics.Rect;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
-import android.util.Pair;
+import android.util.Log;
 import android.view.View;
 
 public class MainActivity extends AppCompatActivity {
 
-    private View view;
-
+    private static final String TAG = "AAA";
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        view = findViewById(R.id.view);
+        View view = findViewById(R.id.view);
         View list = findViewById(R.id.list);
 
         view.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                startActivity(new Intent(MainActivity.this, ChromeActivity.class));
+//                startActivity(new Intent(MainActivity.this, ChromeActivity.class));
             }
         });
 
         AnimSet animSet = new AnimSet(1000, this);
-        animSet.setActiveHandler(new AnimSet.ActiveHandle() {
-            Rect rect = new Rect();
-            @Override
-            public boolean active(Pair<Integer, Integer> startXY, @AnimationDragHelper.AnimationState int state) {
-                view.getHitRect(rect);
-                return rect.contains(startXY.first, startXY.second);
-            }
-        });
+        animSet.setActiveHandler(new AnimSet.DefaultHandle(view));
 
         ObjectAnimator animator1 = ObjectAnimator.ofFloat(view, "translationY", 0, 500);
         ObjectAnimator animator2 = ObjectAnimator.ofFloat(view, "translationX", 0, 200);
@@ -52,7 +43,36 @@ public class MainActivity extends AppCompatActivity {
         ObjectAnimator animator8 = ObjectAnimator.ofFloat(view, "rotationX", 0, (float) (-Math.PI * 3));
         animSet.afterAnimators(false, 100, animator8);
 
+        animSet.setDragListener(new AnimDragListener() {
+            @Override
+            public void onProcess(float percent, int distance) {
+                Log.d(TAG, "onProcess: percent = " + percent + "  distance = " + distance);
+            }
+
+            @Override
+            public void onRelease(boolean forwardOrBackward) {
+                Log.d(TAG, "onRelease: forwardOrBackward " + forwardOrBackward);
+            }
+
+            @Override
+            public void onStartDrag() {
+                Log.d(TAG, "onStartDrag:");
+            }
+
+            @Override
+            public void onDragEnd(boolean startOrEnd) {
+                Log.d(TAG, "onDragEnd: startOrEnd " + startOrEnd);
+            }
+        });
+
         CustomFrameLayout root = (CustomFrameLayout) findViewById(R.id.root);
-        root.addAnimSet(animSet, AnimationDragHelper.DRAG_VERTICAL);
+        root.addAnimSet(animSet, AnimationDragHelper.DRAG_VERTICAL_T2B);
+
+        findViewById(R.id.qq).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                startActivity(new Intent(MainActivity.this, QQSlideActivity.class));
+            }
+        });
     }
 }

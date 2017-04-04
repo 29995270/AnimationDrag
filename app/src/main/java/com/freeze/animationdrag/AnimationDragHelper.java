@@ -4,7 +4,6 @@ import android.content.Context;
 import android.support.annotation.IntDef;
 import android.support.v4.view.MotionEventCompat;
 import android.support.v4.view.VelocityTrackerCompat;
-import android.util.Pair;
 import android.util.SparseArray;
 import android.view.MotionEvent;
 import android.view.VelocityTracker;
@@ -19,13 +18,15 @@ import java.lang.annotation.RetentionPolicy;
 
 public class AnimationDragHelper implements AnimationDragHandler{
     public static final int DRAG_INVALID = -1;
-    public static final int DRAG_HORIZONTAL = 0;
-    public static final int DRAG_VERTICAL = 1;
+    public static final int DRAG_HORIZONTAL_L2R = 0;
+    public static final int DRAG_HORIZONTAL_R2L = 1;
+    public static final int DRAG_VERTICAL_T2B = 2;
+    public static final int DRAG_VERTICAL_B2T = 3;
 
     private int dragDirection = DRAG_INVALID;
     private Context context;
 
-    @IntDef({DRAG_HORIZONTAL, DRAG_VERTICAL})
+    @IntDef({DRAG_HORIZONTAL_L2R, DRAG_HORIZONTAL_R2L, DRAG_VERTICAL_T2B, DRAG_VERTICAL_B2T})
     @Retention(RetentionPolicy.SOURCE)
     public @interface DragDirection {
 
@@ -42,7 +43,7 @@ public class AnimationDragHelper implements AnimationDragHandler{
 
     }
 
-    private SparseArray<AnimSet> animSetArray = new SparseArray<>();;
+    private SparseArray<AnimSet> animSetArray = new SparseArray<>();
 
     private static final int INVALID_POINTER = -1;
 
@@ -76,15 +77,15 @@ public class AnimationDragHelper implements AnimationDragHandler{
                 final int x = (int) ev.getX();
                 final int y = (int) ev.getY();
 
-                AnimSet hAnimSet = animSetArray.get(DRAG_HORIZONTAL);
-                AnimSet vAnimSet = animSetArray.get(DRAG_VERTICAL);
+                AnimSet r2lAnimSet = animSetArray.get(DRAG_HORIZONTAL_R2L);
+                AnimSet l2rAnimSet = animSetArray.get(DRAG_HORIZONTAL_L2R);
+                AnimSet t2bAnimSet = animSetArray.get(DRAG_VERTICAL_T2B);
+                AnimSet b2tAnimSet = animSetArray.get(DRAG_VERTICAL_B2T);
                 if (
-                        (hAnimSet != null
-                                && hAnimSet.getActiveHandle() != null
-                                && hAnimSet.getActiveHandle().active(Pair.create(x, y), hAnimSet.getCurrentPlayTime() == 0 ? STATE_START: STATE_END)) ||
-                                (vAnimSet != null
-                                        && vAnimSet.getActiveHandle() != null
-                                        && vAnimSet.getActiveHandle().active(Pair.create(x, y), vAnimSet.getCurrentPlayTime() == 0 ? STATE_START: STATE_END))
+                        (r2lAnimSet != null && r2lAnimSet.care(x, y)) ||
+                        (l2rAnimSet != null && l2rAnimSet.care(x, y)) ||
+                        (t2bAnimSet != null && t2bAnimSet.care(x, y)) ||
+                        (b2tAnimSet != null && b2tAnimSet.care(x, y))
                         ) {
                     lastMotionY = y;
                     lastMotionX = x;
@@ -113,12 +114,28 @@ public class AnimationDragHelper implements AnimationDragHandler{
 
                 if (yDiff > touchSlop && xDiff < touchSlop/2) {
                     isBeingDragged = true;
+                    if (dragDirection == DRAG_INVALID) {
+                        if (y - lastMotionY > 0) {
+                            AnimSet endedSet = animSetArray.get(DRAG_VERTICAL_B2T);
+                            dragDirection = endedSet != null && endedSet.isEnd() ? DRAG_VERTICAL_B2T : DRAG_VERTICAL_T2B;
+                        } else {
+                            AnimSet endedSet = animSetArray.get(DRAG_VERTICAL_T2B);
+                            dragDirection = endedSet != null && endedSet.isEnd() ? DRAG_VERTICAL_T2B : DRAG_VERTICAL_B2T;
+                        }
+                    }
                     lastMotionY = y;
-                    dragDirection = DRAG_VERTICAL;
                 } else if (yDiff < touchSlop/2 && xDiff > touchSlop) {
                     isBeingDragged = true;
+                    if (dragDirection == DRAG_INVALID) {
+                        if (x - lastMotionX > 0) {
+                            AnimSet endedSet = animSetArray.get(DRAG_HORIZONTAL_R2L);
+                            dragDirection = endedSet != null && endedSet.isEnd() ? DRAG_HORIZONTAL_R2L : DRAG_HORIZONTAL_L2R;
+                        } else {
+                            AnimSet endedSet = animSetArray.get(DRAG_HORIZONTAL_L2R);
+                            dragDirection = endedSet != null && endedSet.isEnd() ? DRAG_HORIZONTAL_L2R : DRAG_HORIZONTAL_R2L;
+                        }
+                    }
                     lastMotionX = x;
-                    dragDirection = DRAG_HORIZONTAL;
                 } else {
                     isBeingDragged = false;
                     dragDirection = DRAG_INVALID;
@@ -159,15 +176,15 @@ public class AnimationDragHelper implements AnimationDragHandler{
                 activePointerId = ev.getPointerId(0);
                 ensureVelocityTracker();
 
-                AnimSet hAnimSet = animSetArray.get(DRAG_HORIZONTAL);
-                AnimSet vAnimSet = animSetArray.get(DRAG_VERTICAL);
+                AnimSet r2lAnimSet = animSetArray.get(DRAG_HORIZONTAL_R2L);
+                AnimSet l2rAnimSet = animSetArray.get(DRAG_HORIZONTAL_L2R);
+                AnimSet t2bAnimSet = animSetArray.get(DRAG_VERTICAL_T2B);
+                AnimSet b2tAnimSet = animSetArray.get(DRAG_VERTICAL_B2T);
                 if (
-                        (hAnimSet != null
-                                && hAnimSet.getActiveHandle() != null
-                                && hAnimSet.getActiveHandle().active(Pair.create(x, y), hAnimSet.getCurrentPlayTime() == 0 ? STATE_START: STATE_END)) ||
-                                (vAnimSet != null
-                                        && vAnimSet.getActiveHandle() != null
-                                        && vAnimSet.getActiveHandle().active(Pair.create(x, y), vAnimSet.getCurrentPlayTime() == 0 ? STATE_START: STATE_END))
+                        (r2lAnimSet != null && r2lAnimSet.care(x, y)) ||
+                                (l2rAnimSet != null && l2rAnimSet.care(x, y)) ||
+                                (t2bAnimSet != null && t2bAnimSet.care(x, y)) ||
+                                (b2tAnimSet != null && b2tAnimSet.care(x, y))
                         ) {
                     lastMotionX = x;
                     lastMotionY = y;
@@ -191,7 +208,15 @@ public class AnimationDragHelper implements AnimationDragHandler{
                 int dy = lastMotionY - y;
 
                 if (!isBeingDragged && Math.abs(dy) > touchSlop && Math.abs(dx) < touchSlop/2) {
-                    dragDirection = DRAG_VERTICAL;
+                    if (dragDirection == DRAG_INVALID) {
+                        if (dy > 0) {
+                            AnimSet endedSet = animSetArray.get(DRAG_VERTICAL_T2B);
+                            dragDirection = endedSet != null && endedSet.isEnd() ? DRAG_VERTICAL_T2B : DRAG_VERTICAL_B2T;
+                        } else {
+                            AnimSet endedSet = animSetArray.get(DRAG_VERTICAL_B2T);
+                            dragDirection = endedSet != null && endedSet.isEnd() ? DRAG_VERTICAL_B2T : DRAG_VERTICAL_T2B;
+                        }
+                    }
                     isBeingDragged = true;
                     if (dy > 0) {
                         dy -= touchSlop;
@@ -199,7 +224,15 @@ public class AnimationDragHelper implements AnimationDragHandler{
                         dy += touchSlop;
                     }
                 } else if (!isBeingDragged && Math.abs(dx) > touchSlop && Math.abs(dy) < touchSlop/2) {
-                    dragDirection = DRAG_HORIZONTAL;
+                    if (dragDirection == DRAG_INVALID) {
+                        if (dx > 0) {
+                            AnimSet endedSet = animSetArray.get(DRAG_HORIZONTAL_L2R);
+                            dragDirection = endedSet != null && endedSet.isEnd() ? DRAG_HORIZONTAL_L2R : DRAG_HORIZONTAL_R2L;
+                        } else {
+                            AnimSet endedSet = animSetArray.get(DRAG_HORIZONTAL_R2L);
+                            dragDirection = endedSet != null && endedSet.isEnd() ? DRAG_HORIZONTAL_R2L : DRAG_HORIZONTAL_L2R;
+                        }
+                    }
                     isBeingDragged = true;
                     if (dx > 0) {
                         dx -= touchSlop;
@@ -222,10 +255,10 @@ public class AnimationDragHelper implements AnimationDragHandler{
                     velocityTracker.addMovement(ev);
                     velocityTracker.computeCurrentVelocity(1000);
                     float vel = 0;
-                    if (dragDirection == DRAG_HORIZONTAL) {
+                    if (dragDirection == DRAG_HORIZONTAL_L2R || dragDirection == DRAG_HORIZONTAL_R2L) {
                         vel = VelocityTrackerCompat.getXVelocity(velocityTracker,
                                 activePointerId);
-                    } else if (dragDirection == DRAG_VERTICAL){
+                    } else if (dragDirection == DRAG_VERTICAL_T2B || dragDirection == DRAG_VERTICAL_B2T){
                         vel = VelocityTrackerCompat.getYVelocity(velocityTracker,
                                 activePointerId);
                     }
@@ -260,10 +293,20 @@ public class AnimationDragHelper implements AnimationDragHandler{
     private void scroll(int dx, int dy, int dragDirection) {
         AnimSet animSet = animSetArray.get(dragDirection);
         if (animSet == null) return;
-        if (dragDirection == DRAG_HORIZONTAL) {
-            animSet.setCurrentPlayTime(animSet.getCurrentPlayTime() + animSet.distanceToTime(-dx));
-        } else if (dragDirection == DRAG_VERTICAL) {
-            animSet.setCurrentPlayTime(animSet.getCurrentPlayTime() + animSet.distanceToTime(-dy));
+        switch (dragDirection) {
+            case DRAG_HORIZONTAL_L2R:
+                animSet.setCurrentPlayTime(animSet.getCurrentPlayTime() + animSet.distanceToTime(-dx));
+                break;
+            case DRAG_HORIZONTAL_R2L:
+                animSet.setCurrentPlayTime(animSet.getCurrentPlayTime() + animSet.distanceToTime(dx));
+                break;
+            case DRAG_VERTICAL_T2B:
+                animSet.setCurrentPlayTime(animSet.getCurrentPlayTime() + animSet.distanceToTime(-dy));
+                break;
+            case DRAG_VERTICAL_B2T:
+                animSet.setCurrentPlayTime(animSet.getCurrentPlayTime() + animSet.distanceToTime(dy));
+                break;
+            default:
         }
     }
 

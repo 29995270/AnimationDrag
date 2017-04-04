@@ -4,10 +4,13 @@ import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.ValueAnimator;
 import android.content.Context;
+import android.graphics.Rect;
 import android.os.Build;
+import android.support.annotation.Nullable;
 import android.util.Log;
 import android.util.Pair;
 import android.util.SparseIntArray;
+import android.view.View;
 import android.view.ViewConfiguration;
 import android.view.animation.LinearInterpolator;
 
@@ -38,6 +41,7 @@ public class AnimSet {
             return true;
         }
     };
+    private AnimDragListener dragListener;
 
     public AnimSet(int maxDragDistance, Context context) {
         animatorLists = new ArrayList<>();
@@ -115,6 +119,14 @@ public class AnimSet {
         return activeHandle;
     }
 
+    public boolean isEnd() {
+        return getCurrentPlayTime() == endTime;
+    }
+
+    public boolean isStart() {
+        return getCurrentPlayTime() == 0;
+    }
+
     void setCurrentPlayTime(int currentPlayTime) {
         if (currentPlayTime < 0) {
             currentPlayTime = 0;
@@ -182,15 +194,22 @@ public class AnimSet {
     }
 
     int distanceToTime(int distance) {
-        return (int) (totalDuration / ((float) maxDragDistance) * distance);
+        return (int) (totalDuration / ((float) Math.abs(maxDragDistance)) * distance);
     }
 
     void release(float vel) {
-        if (currentPlayTime == 0 || currentPlayTime == endTime) return;
+        if (currentPlayTime == 0 || currentPlayTime == endTime) {
+            if (dragListener != null) dragListener.onRelease(currentPlayTime == endTime);
+            return;
+        }
         if (maxDragDistance > 0) {
-            startOrReverseAnimators(vel > scaledMinimumFlingVelocity * 15 || (getCurrentPlayTime() > totalDuration * 0.5f && vel > 0));
+            boolean b = vel > scaledMinimumFlingVelocity * 15 || (getCurrentPlayTime() > totalDuration * 0.5f && vel > 0);
+            startOrReverseAnimators(b);
+            if (dragListener != null) dragListener.onRelease(b);
         } else {
-            startOrReverseAnimators(vel < -scaledMinimumFlingVelocity * 15 || (getCurrentPlayTime() > totalDuration * 0.5f && vel < 0));
+            boolean b = (vel < -scaledMinimumFlingVelocity * 15) || (getCurrentPlayTime() > totalDuration * 0.5f && vel < 0);
+            startOrReverseAnimators(b);
+            if (dragListener != null) dragListener.onRelease(b);
         }
     }
 
@@ -320,8 +339,33 @@ public class AnimSet {
         }
     }
 
+    void setDragListener(@Nullable AnimDragListener dragListener) {
+        this.dragListener = dragListener;
+    }
+
+    boolean care(int x, int y) {
+        return getActiveHandle() != null
+                && getActiveHandle().active(Pair.create(x, y), getCurrentPlayTime() == 0 ? AnimationDragHelper.STATE_START: AnimationDragHelper.STATE_END);
+    }
+
     public interface ActiveHandle {
         boolean active(Pair<Integer, Integer> startXY, @AnimationDragHelper.AnimationState int state);
+    }
+
+    public static class DefaultHandle implements ActiveHandle {
+
+        private View activeView;
+        private Rect rect = new Rect();
+
+        public DefaultHandle(View activeView) {
+            this.activeView = activeView;
+        }
+
+        @Override
+        public boolean active(Pair<Integer, Integer> startXY, @AnimationDragHelper.AnimationState int state) {
+            activeView  .getHitRect(rect);
+            return rect.contains(startXY.first, startXY.second);
+        }
     }
 
     private static class DragLinearInterpolator extends LinearInterpolator {
