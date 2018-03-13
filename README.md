@@ -25,7 +25,8 @@
 
 ![](https://github.com/29995270/AnimationDrag/blob/master/art/qq2.gif "qq2")  
 
-更复杂的用法:多个步骤的手势  
+更复杂的用法:多个步骤的手势   
+
 ```java
         AnimSet animSet = new AnimSet(maxDragDistance, this);
         animSet.setActiveHandler(new AnimSet.DefaultHandle(view));
@@ -45,7 +46,7 @@
 
         ObjectAnimator animator8 = ObjectAnimator.ofFloat(view, "rotationX", 0, (float) (-Math.PI * 3));
         animSet.afterAnimators(false, 100, animator8);
-```  
+```
 看起来像youtube的小窗效果      
  
 ![](https://github.com/29995270/AnimationDrag/blob/master/art/youtube.gif "youtube")      
