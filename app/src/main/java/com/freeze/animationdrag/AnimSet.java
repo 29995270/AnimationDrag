@@ -26,7 +26,7 @@ public class AnimSet {
     private List<List<ValueAnimator>> animatorLists;
     private int endIndex = 0;  //结束动画的 index
     private int endTime; //index 对应的动画结束后的时间
-    private int currentPlayTime;
+    private long currentPlayTime;
 
     private int totalDuration;
     private SparseIntArray durations;
@@ -127,17 +127,17 @@ public class AnimSet {
         return getCurrentPlayTime() == 0;
     }
 
-    void setCurrentPlayTime(int currentPlayTime) {
+    void setCurrentPlayTime(long currentPlayTime) {
         if (currentPlayTime < 0) {
             currentPlayTime = 0;
         } else if (currentPlayTime > totalDuration) {
             currentPlayTime = totalDuration;
         }
-        int prePlayTime = this.currentPlayTime;
+        long prePlayTime = this.currentPlayTime;
         this.currentPlayTime = currentPlayTime;
         int timeLeft = 0;
         int currentStepIndex = -1;
-        int currentStepTime = 0;
+        long currentStepTime = 0;
         int passStepStartToEnd = 0; // 0 没有穿过段落 1 start to end 穿过段落 -1 end to start 穿过段落
         for (int i = 0; i < durations.size(); i++) {
             int duration = durations.get(i);
@@ -189,7 +189,7 @@ public class AnimSet {
         }
     }
 
-    int getCurrentPlayTime() {
+    long getCurrentPlayTime() {
         return currentPlayTime;
     }
 
@@ -202,12 +202,13 @@ public class AnimSet {
             if (dragListener != null) dragListener.onRelease(currentPlayTime == endTime);
             return;
         }
+        Log.d("AAA", "getCurrentPlayTime() : " + getCurrentPlayTime() + "   " + "totalDuration" + ":" + durations + "  " + "vel:" + vel);
         if (maxDragDistance > 0) {
-            boolean b = vel > scaledMinimumFlingVelocity * 15 || (getCurrentPlayTime() > totalDuration * 0.5f && vel > 0);
+            boolean b = vel > scaledMinimumFlingVelocity * 15 || (getCurrentPlayTime() > totalDuration * 0.5f && vel > -scaledMinimumFlingVelocity * 15);
             startOrReverseAnimators(b);
             if (dragListener != null) dragListener.onRelease(b);
         } else {
-            boolean b = (vel < -scaledMinimumFlingVelocity * 15) || (getCurrentPlayTime() > totalDuration * 0.5f && vel < 0);
+            boolean b = (vel < -scaledMinimumFlingVelocity * 15) || (getCurrentPlayTime() > totalDuration * 0.5f && vel < scaledMinimumFlingVelocity * 15);
             startOrReverseAnimators(b);
             if (dragListener != null) dragListener.onRelease(b);
         }
@@ -229,7 +230,11 @@ public class AnimSet {
             if (startOrReverse) {
                 //正向行进到endIndex对应的动画结束
                 List<List<ValueAnimator>> subAnimationLists = animatorLists.subList(currentStepIndex, endIndex + 1);
-                start(subAnimationLists, endTime);
+                long preAnimationDurationSum = 0;
+                for (int i = 0; i < currentStepIndex; i++) {
+                    preAnimationDurationSum += animatorLists.get(i).get(0).getDuration();
+                }
+                start(subAnimationLists, preAnimationDurationSum, endTime);
             } else {
                 //逆向到开始
                 List<List<ValueAnimator>> subAnimationLists = animatorLists.subList(0, currentStepIndex + 1);
@@ -244,12 +249,12 @@ public class AnimSet {
 
     }
 
-    private void start(final List<List<ValueAnimator>> animLists, final int endTime) {
+    private void start(final List<List<ValueAnimator>> animLists, final long preAnimationDurationSum, final int endTime) {
         List<ValueAnimator> valueAnimators = animLists.get(0);
         for (int i = 0; i < valueAnimators.size(); i++) {
             ValueAnimator animator = valueAnimators.get(i);
             animator.start();
-            animator.setCurrentPlayTime(currentPlayTime);
+            animator.setCurrentPlayTime(currentPlayTime - preAnimationDurationSum);
             if (isOneStep) {
                 ((DragLinearInterpolator) animator.getInterpolator()).setReleaseVel(1);
             }
@@ -266,7 +271,8 @@ public class AnimSet {
                             currentPlayTime = endTime;
                             return;
                         }
-                        start(animLists.subList(1, animLists.size()), endTime);
+                        currentPlayTime = preAnimationDurationSum + animation.getDuration();
+                        start(animLists.subList(1, animLists.size()), preAnimationDurationSum + animation.getDuration(), endTime);
                     }
                 });
             } else {

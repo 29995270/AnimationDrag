@@ -20,21 +20,24 @@ public class MainActivity extends AppCompatActivity {
         view.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-//                startActivity(new Intent(MainActivity.this, ChromeActivity.class));
+                startActivity(new Intent(MainActivity.this, ChromeActivity.class));
             }
         });
 
-        AnimSet animSet = new AnimSet(1000, this);
+        int maxDragDistance = Utils.getScreenHeight(this) - Utils.dp2px(this, 200 / 2 + 100 / 2 + 56) - Utils.getStatusBarHeight(this);
+        int listMaxDragDistance = Utils.getScreenHeight(this) - Utils.dp2px(this, 56) - Utils.getStatusBarHeight(this);
+
+        AnimSet animSet = new AnimSet(maxDragDistance, this);
         animSet.setActiveHandler(new AnimSet.DefaultHandle(view));
 
-        ObjectAnimator animator1 = ObjectAnimator.ofFloat(view, "translationY", 0, 500);
-        ObjectAnimator animator2 = ObjectAnimator.ofFloat(view, "translationX", 0, 200);
-        ObjectAnimator animator3 = ObjectAnimator.ofFloat(list, "translationY", 0, 960);
+        ObjectAnimator animator1 = ObjectAnimator.ofFloat(view, "translationY", 0, maxDragDistance/2);
+        ObjectAnimator animator2 = ObjectAnimator.ofFloat(view, "translationX", 0, Utils.getScreenWidth(this)/4);
+        ObjectAnimator animator3 = ObjectAnimator.ofFloat(list, "translationY", 0, listMaxDragDistance/2);
 
         animSet.startAnimators(200, animator1, animator2, animator3);
 
-        ObjectAnimator animator4 = ObjectAnimator.ofFloat(view, "translationY", 500, 1000);
-        ObjectAnimator animator5 = ObjectAnimator.ofFloat(list, "translationY", 960, 1920);
+        ObjectAnimator animator4 = ObjectAnimator.ofFloat(view, "translationY", maxDragDistance/2, maxDragDistance);
+        ObjectAnimator animator5 = ObjectAnimator.ofFloat(list, "translationY", listMaxDragDistance/2, listMaxDragDistance);
         ObjectAnimator animator6 = ObjectAnimator.ofFloat(view, "scaleX", 1, 0.5f);
         ObjectAnimator animator7 = ObjectAnimator.ofFloat(view, "scaleY", 1, 0.5f);
 
@@ -65,7 +68,7 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        CustomFrameLayout root = (CustomFrameLayout) findViewById(R.id.root);
+        CustomFrameLayout root = findViewById(R.id.root);
         root.addAnimSet(animSet, AnimationDragHelper.DRAG_VERTICAL_T2B);
 
         findViewById(R.id.qq).setOnClickListener(new View.OnClickListener() {

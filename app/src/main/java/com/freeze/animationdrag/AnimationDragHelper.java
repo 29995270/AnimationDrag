@@ -256,11 +256,9 @@ public class AnimationDragHelper implements AnimationDragHandler{
                     velocityTracker.computeCurrentVelocity(1000);
                     float vel = 0;
                     if (dragDirection == DRAG_HORIZONTAL_L2R || dragDirection == DRAG_HORIZONTAL_R2L) {
-                        vel = VelocityTrackerCompat.getXVelocity(velocityTracker,
-                                activePointerId);
+                        vel = velocityTracker.getXVelocity(activePointerId);
                     } else if (dragDirection == DRAG_VERTICAL_T2B || dragDirection == DRAG_VERTICAL_B2T){
-                        vel = VelocityTrackerCompat.getYVelocity(velocityTracker,
-                                activePointerId);
+                        vel = velocityTracker.getYVelocity(activePointerId);
                     }
                     fling(dragDirection, vel);
                 }
