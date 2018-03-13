@@ -19,3 +19,36 @@
         
         root.addAnimSet(animSet, AnimationDragHelper.DRAG_HORIZONTAL_L2R); //添加动画集合,并指定手势方向
 ```
+![](https://github.com/29995270/AnimationDrag/blob/master/art/qq.gif "qq")   
+  
+  当然,我们也可以在4个方向上都加上手势动画  
+
+![](https://github.com/29995270/AnimationDrag/blob/master/art/qq2.gif "qq2")  
+
+更复杂的用法:多个步骤的手势  
+```java
+        AnimSet animSet = new AnimSet(maxDragDistance, this);
+        animSet.setActiveHandler(new AnimSet.DefaultHandle(view));
+
+        ObjectAnimator animator1 = ObjectAnimator.ofFloat(view, "translationY", 0, maxDragDistance/2);
+        ObjectAnimator animator2 = ObjectAnimator.ofFloat(view, "translationX", 0, Utils.getScreenWidth(this)/4);
+        ObjectAnimator animator3 = ObjectAnimator.ofFloat(list, "translationY", 0, listMaxDragDistance/2);
+
+        animSet.startAnimators(200, animator1, animator2, animator3);
+
+        ObjectAnimator animator4 = ObjectAnimator.ofFloat(view, "translationY", maxDragDistance/2, maxDragDistance);
+        ObjectAnimator animator5 = ObjectAnimator.ofFloat(list, "translationY", listMaxDragDistance/2, listMaxDragDistance);
+        ObjectAnimator animator6 = ObjectAnimator.ofFloat(view, "scaleX", 1, 0.5f);
+        ObjectAnimator animator7 = ObjectAnimator.ofFloat(view, "scaleY", 1, 0.5f);
+
+        animSet.afterAnimators(true, 200, animator4, animator5, animator6, animator7);
+
+        ObjectAnimator animator8 = ObjectAnimator.ofFloat(view, "rotationX", 0, (float) (-Math.PI * 3));
+        animSet.afterAnimators(false, 100, animator8);
+```  
+看起来像youtube的小窗效果      
+ 
+![](https://github.com/29995270/AnimationDrag/blob/master/art/youtube.gif "youtube")      
+
+
+看上去十分美好,但是事实很残酷,api21及以下时,属性动画的reverse方法并不能从当前运行时间开始反向执行,这也使这个项目有一年没有更新任何代码,现在来看,这依旧是个很棘手的问题,还望有大佬不吝赐教.
